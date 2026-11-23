@@ -1,33 +1,18 @@
-"""제공 코드: Day5 데이터·전처리 재사용 및 출력 보조. 학습된 모델은 포함하지 않습니다.
-실습의 목표 함수는 각 main.py의 TODO에서 구현합니다. expected_outputs를 읽지 않습니다.
+"""제공 코드: 전날 원본·분할 ID·순서를 재사용하는 입출력 보조.
+실습의 핵심 함수는 각 main.py의 TODO에서 구현합니다. test의X/y를 반환하지 않습니다.
 """
 from dataclasses import dataclass
 from pathlib import Path
-import json
-import hashlib
-import math
-import numbers
-import platform
-import importlib.metadata
+import json, hashlib, numbers, platform, importlib.metadata
 import numpy as np
 import pandas as pd
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.base import clone
-from sklearn.metrics import (mean_absolute_error, mean_squared_error,
-    root_mean_squared_error, r2_score, accuracy_score, precision_score,
-    recall_score, f1_score, confusion_matrix)
-
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / 'data'
-NUM = ['input_chars', 'allowed_tools']
-CAT = ['task_type', 'priority']
-FEATURES = NUM + CAT
-FORBIDDEN = {'request_id', 'failed', 'elapsed_ms', 'retry_count', 'status'}
-K_CANDIDATES = [1, 3, 5, 9, 15]
-
+ROOT=Path(__file__).resolve().parent
+DATA=ROOT/'data'
+NUM=['input_chars','allowed_tools']
+CAT=['task_type','priority']
+FEATURES=NUM+CAT
+DERIVED=['log_input_chars','chars_per_slot']
+FORBIDDEN={'request_id','failed','elapsed_ms','retry_count','status'}
 @dataclass
 class DevData:
     X_train: pd.DataFrame
@@ -66,8 +51,8 @@ def check_features(X, *, training=False):
     for c in NUM:
         result[c]=pd.to_numeric(result[c],errors='raise').astype(float)
         v=result[c].dropna().to_numpy()
-        if not np.isfinite(v).all() or (v<0).any() or not np.equal(v,np.floor(v)).all():
-            raise ValueError(f'{c}: 결측 또는 유한한 비음수 정수형 측정값만 허용합니다.')
+        if not np.isfinite(v).all() or (v<0).any():
+            raise ValueError(f'{c}: 결측 또는 유한한 비음수 측정값만 허용합니다.')
     for c in CAT:
         s=result[c].astype(object)
         if any(not isinstance(v,str) or not v.strip() for v in s.dropna()):
@@ -135,69 +120,37 @@ def load_checkpoint(data_dir=None):
     return (tr[FEATURES].copy(),va[FEATURES].copy(),tr['failed'].copy(),
             va['failed'].copy(),tr['elapsed_ms'].copy(),va['elapsed_ms'].copy())
 
-def make_pre(scale='standard'):
-    """Day5 복습용 제공 함수: 수치 경로만 스케일링하고 범주는 원핫 처리합니다."""
-    steps=[('imputer',SimpleImputer(strategy='median'))]
-    if scale=='standard': steps.append(('scaler',StandardScaler()))
-    elif scale=='minmax': steps.append(('scaler',MinMaxScaler()))
-    elif scale!='none': raise ValueError('scale은 none/standard/minmax 중 하나')
-    cat=Pipeline([('imputer',SimpleImputer(strategy='most_frequent')),
-                  ('encoder',OneHotEncoder(handle_unknown='ignore',sparse_output=False))])
-    return ColumnTransformer([('num',Pipeline(steps),NUM),('cat',cat,CAT)],remainder='drop')
 
-def build(estimator,scale='standard'):
-    """각 후보는 독립적인 전처리기·모델을 갖습니다. clone은 학습 상태를 복사하지 않습니다."""
-    return Pipeline([('pre',make_pre(scale)),('model',clone(estimator))])
+def json_ready(x):
+    if isinstance(x,dict):return {str(k):json_ready(v) for k,v in x.items()}
+    if isinstance(x,(list,tuple)):return [json_ready(v) for v in x]
+    if isinstance(x,np.ndarray):return json_ready(x.tolist())
+    if isinstance(x,np.generic):return json_ready(x.item())
+    if isinstance(x,float) and not np.isfinite(x):raise ValueError('NaN/inf는JSON에저장하지않습니다. 계산불가는None으로표시하세요.')
+    return x
 
-def reg_metrics(y,pred):
-    """이전 실습 재사용용. 회귀 단위는 ms이며 R²는 단위가 없습니다."""
-    return {'MAE_ms':float(mean_absolute_error(y,pred)),
-            'RMSE_ms':float(root_mean_squared_error(y,pred)),
-            'R2':float(r2_score(y,pred))}
+def save_json(path,value):
+    p=Path(path);p.parent.mkdir(parents=True,exist_ok=True)
+    text=json.dumps(json_ready(value),ensure_ascii=False,indent=2,allow_nan=False)+'\n'
+    temp=p.with_name(p.name+'.tmp');temp.write_text(text,encoding='utf-8');temp.replace(p)
 
-def cls_metrics(y,pred):
-    """실패(1)를 양성으로 고정. 행=실제, 열=예측, labels=[0,1]."""
-    tn,fp,fn,tp=confusion_matrix(y,pred,labels=[0,1]).ravel()
-    return {'Accuracy':float(accuracy_score(y,pred)),
-            'Precision':float(precision_score(y,pred,zero_division=0)),
-            'Recall':float(recall_score(y,pred,zero_division=0)),
-            'F1':float(f1_score(y,pred,zero_division=0)),
-            'TN':int(tn),'FP':int(fp),'FN':int(fn),'TP':int(tp)}
+def save_table(path,table):
+    p=Path(path);p.parent.mkdir(parents=True,exist_ok=True)
+    table.to_csv(p,index=False,encoding='utf-8-sig',float_format='%.17g')
 
-def snapshot(pre):
-    """학습한 중앙값·범주·스케일 통계를 값으로 복사해 변환 전후 대조합니다."""
-    num=pre.named_transformers_['num']; cat=pre.named_transformers_['cat']
-    values={'numeric_imputer':num['imputer'].statistics_.copy(),
-            'categorical_imputer':cat['imputer'].statistics_.copy(),
-            'categories':[x.copy() for x in cat['encoder'].categories_]}
-    if 'scaler' in num.named_steps:
-        for a in ['mean_','scale_','var_','min_','data_min_','data_max_']:
-            if hasattr(num['scaler'],a): values[a]=getattr(num['scaler'],a).copy()
-    return json_ready(values)
+def output_dir(script):
+    p=Path(script).resolve().parent/'outputs';p.mkdir(exist_ok=True);return p
 
-def json_ready(value):
-    if isinstance(value,dict): return {str(k):json_ready(v) for k,v in value.items()}
-    if isinstance(value,pd.DataFrame): return json_ready(value.to_dict(orient='records'))
-    if isinstance(value,(list,tuple,np.ndarray,pd.Index,pd.Series)):
-        return [json_ready(v) for v in value]
-    if isinstance(value,np.generic): return json_ready(value.item())
-    if isinstance(value,float) and not math.isfinite(value): return None
-    if value is pd.NA or value is pd.NaT: return None
-    return value
+def print_json(value):print(json.dumps(json_ready(value),ensure_ascii=False,indent=2,allow_nan=False))
 
-def write_json(path,value):
-    path=Path(path); path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(json.dumps(json_ready(value),ensure_ascii=False,indent=2,allow_nan=False)+'\n',encoding='utf-8')
+def classification_folds(dev):
+    from sklearn.model_selection import StratifiedKFold
+    return list(StratifiedKFold(5,shuffle=True,random_state=42).split(dev.X_train,dev.yc_train))
 
-def emit(result,output):
-    """계산 결과를 저장합니다. expected_outputs와 교사용 답안을 읽지 않습니다."""
-    output=Path(output); output.mkdir(parents=True,exist_ok=True)
-    write_json(output/'result.json',result)
-    for key,value in result.items():
-        if isinstance(value,pd.DataFrame): value.to_csv(output/(key+'.csv'),index=False,encoding='utf-8-sig')
-    print(json.dumps(json_ready(result),ensure_ascii=False,indent=2,allow_nan=False))
+def regression_folds(dev):
+    from sklearn.model_selection import KFold
+    return list(KFold(5,shuffle=True,random_state=42).split(dev.X_train))
 
 def environment():
-    names=['numpy','pandas','scikit-learn','scipy','joblib','threadpoolctl']
-    return {'python':platform.python_version(),
-            **{x:importlib.metadata.version(x) for x in names}}
+    names=['numpy','pandas','scipy','scikit-learn','xgboost','joblib','matplotlib','threadpoolctl']
+    return {'python':platform.python_version(),'platform':platform.system(),**{n:importlib.metadata.version(n) for n in names}}

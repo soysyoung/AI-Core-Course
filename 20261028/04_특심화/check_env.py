@@ -1,21 +1,25 @@
-"""설치 상태를 읽어 확인할 뿐 자동 설치·업그레이드하지 않습니다."""
+"""실제 Python 실행기·패키지·CPU 모델 동작을 확인합니다. 설치나 환경 변경은 하지 않습니다."""
 from pathlib import Path
-import sys,platform,json,importlib.metadata,argparse
-
+import sys,platform,importlib,importlib.metadata,json
+EXPECTED={'numpy':'2.3.5','pandas':'2.2.3','scipy':'1.17.0','scikit-learn':'1.8.0','xgboost':'3.1.3','joblib':'1.5.3','matplotlib':'3.10.8','threadpoolctl':'3.6.0'}
+MODULES={'scikit-learn':'sklearn'}
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--strict',action='store_true');a=p.parse_args()
-    expected=json.loads((Path(__file__).resolve().parent/'environment_reference.json').read_text(encoding='utf-8'))
-    print('실행 Python:',sys.executable)
-    missing=[];different=[]
-    for name,version in expected.items():
-        try: actual=platform.python_version() if name=='python' else importlib.metadata.version(name)
-        except importlib.metadata.PackageNotFoundError:
-            missing.append(name);print(name,'미설치');continue
-        print(f'{name}: {actual} (검증 기준 {version})')
-        if actual!=version: different.append(name)
-    if missing: print('requirements-lock.txt로 가상환경에 설치하세요:',missing);return 1
-    if different: print('기준 환경과 다름. 동일 수치 재현이 필요하면 별도 검증 환경을 사용하세요:',different)
-    else: print('검증 기준 버전과 일치합니다.')
-    return 1 if a.strict and different else 0
-
-if __name__=='__main__':raise SystemExit(main())
+    print('Python:',platform.python_version());print('실행기:',sys.executable);print('운영체제:',platform.system())
+    errors=[];mismatches=[]
+    for name,expected in EXPECTED.items():
+        try:
+            importlib.import_module(MODULES.get(name,name));actual=importlib.metadata.version(name)
+            print(f'{name}: {actual} (검증버전 {expected})')
+            if actual!=expected:mismatches.append(name)
+        except Exception as exc:errors.append(f'{name}: {type(exc).__name__}: {exc}')
+    if errors:
+        print('\n'.join(errors));print('선택한 가상환경에서 requirements-lock.txt 설치 및 원래 오류를 확인하세요.');return 1
+    import numpy as np
+    from xgboost import XGBClassifier
+    model=XGBClassifier(n_estimators=2,max_depth=1,tree_method='hist',device='cpu',n_jobs=1,random_state=42)
+    x=np.array([[0.],[1.],[2.],[3.],[4.],[5.]])
+    model.fit(x,np.array([0,0,0,1,1,1]));model.predict(x)
+    print('XGBoost CPU 실행: 통과 / GPU·외부 API 불필요')
+    if mismatches or platform.python_version()!='3.13.5':print('버전 차이 있음: 예상값은 검증환경 기준입니다. 버전 기록과 추가 확인이 필요합니다.')
+    return 0
+if __name__=='__main__':sys.exit(main())

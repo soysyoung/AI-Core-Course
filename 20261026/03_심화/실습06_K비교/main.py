@@ -35,8 +35,9 @@ for task in ["classification", "regression"]:
         else:
             # TODO H06: 회귀의 train·valid RMSE를 각각 구하세요.
             # 힌트: 첫 번째 인자는 실제값, 두 번째 인자는 대응하는 예측입니다.
-            train_score = None
-            valid_score = None
+            # train_score = None
+            # valid_score = None
+            
             # RMSE는 실제 소요 시간과 예측 소요 시간의 차이를 하나의 숫자로 나타낸 값입니다.
             # train 점수는 train의 실제값과 train 예측값을 서로 비교해 계산합니다.
             train_score = root_mean_squared_error(train[target], p_train)
