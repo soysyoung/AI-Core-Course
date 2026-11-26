@@ -18,12 +18,37 @@ def score_delta(before: float | None, after: float | None) -> float | None:
     """같은 질문의 Before/After 점수 변화량을 계산하세요. No-answer(None)는 수치 차이를 만들지 않습니다."""
     # TODO D28-07-B01: 같은 질문의 Before/After 점수 변화량을 계산하세요. No-answer(None)는 수치 차이를 만들지 않습니다.
     # 힌트: A/B 비교 전 두 실행의 Dataset 버전과 모드가 같아야 합니다.
+    # [추가] None은 "정답이 없는 질문이라 점수를 못 매김"이란 뜻이에요. 0점과 달라요!
+    # [추가] 점수가 없는 쪽이 하나라도 있으면 빼기를 할 수 없으니 None을 그대로 돌려줘요.
+    if before is None or after is None:
+        return None
+    # [추가] 변화량 = 나중 점수 - 처음 점수. 양수면 좋아졌고, 음수면 나빠졌어요. (예: 0.5 → 1.0 이면 +0.5)
+    return after - before
     raise NotImplementedError("D28-07-B01 TODO를 완성하세요")
 
 def find_problem_stage(run: dict, gold: list[str]) -> str:
     """검색 후보 누락·Reranking 누락·Context 누락·생성 실패 중 어디인지 반환하세요."""
     # TODO D28-07-B02: 검색 후보 누락·Reranking 누락·Context 누락·생성 실패 중 어디인지 반환하세요.
     # 힌트: Candidate에 Gold가 없다면 먼저 Retrieval 단계 문제입니다.
+    # [추가] 정답 문서(Gold)가 4개의 문을 차례로 통과하는지 보고, 처음 막힌 문을 범인으로 지목해요.
+    # [추가]   문1 검색 후보(candidate_ids) → 문2 재정렬 상위 3개(ranked_ids[:3]) → 문3 Context(included_ids) → 문4 답변 생성(status)
+    # [추가] 정답 문서가 없는 질문(No-answer)은 "모른다"고 답해야 정상이에요. 답을 지어냈으면 생성 실패예요.
+    if not gold:
+        return 'generation_failure' if run['status'] == 'answered' else 'ok_no_answer'
+    # [추가] 문1: 정답 문서가 검색 후보에 하나라도 빠졌다면, 시작부터 못 찾은 거예요.
+    if not all(g in run['candidate_ids'] for g in gold):
+        return 'retrieval_miss'
+    # [추가] 문2: 후보에는 있었는데 순위를 다시 매긴 뒤 상위 3등 안에 못 들었어요. (평가 기준 k=3)
+    if not all(g in run['ranked_ids'][:3] for g in gold):
+        return 'rerank_miss'
+    # [추가] 문3: 순위는 좋았지만 LLM에게 실제로 건네준 자료(Context)에 안 들어갔어요.
+    if not all(g in run['included_ids'] for g in gold):
+        return 'context_miss'
+    # [추가] 문4: 자료는 다 받았는데도 답을 못 했다면, 답변을 만드는 단계의 문제예요.
+    if run['status'] != 'answered':
+        return 'generation_failure'
+    # [추가] 4개의 문을 모두 통과했어요. 문제 없음!
+    return 'ok'
     raise NotImplementedError("D28-07-B02 TODO를 완성하세요")
 
 

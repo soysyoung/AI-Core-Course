@@ -21,7 +21,15 @@ def make_inputs(question: str, context: str) -> dict:
     # TODO D26-05-B01: 질문과 Context를 각각 question·context Key로 묶어 반환합니다.
     # 힌트: Dictionary의 두 Key 이름은 Prompt의 변수 이름과 같아야 합니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-05-B01 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-05-B01 TODO 미완성")
+    # [추가 설명] Prompt는 빈칸이 뚫린 "문제지 양식"이에요. 양식에는 {question}과 {context}라는 빈칸이 있어요.
+    # 빈칸을 채우려면 "빈칸 이름표: 채울 내용" 형태의 dict를 넘겨야 해요.
+    # 이름표가 양식의 빈칸 이름과 한 글자라도 다르면 "빈칸을 못 찾았다"는 오류가 나요.
+    return {
+        "question": question,  # 학생이 물어본 질문
+        "context": context,  # 질문에 답할 때 참고할 근거 글(출처 번호 포함)
+    }
     # END D26-05-B01
 
 
@@ -31,7 +39,19 @@ def invoke_pair(prompt, chat_model, inputs: dict):
     # TODO D26-05-B02: Prompt를 먼저 실행하고 그 반환값을 Chat Model에 전달한 뒤 두 반환값을 함께 반환합니다.
     # 힌트: 첫 invoke의 반환값이 둘째 invoke의 입력입니다. 반환 순서는 (prompt_value, message)입니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-05-B02 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-05-B02 TODO 미완성")
+    # [추가 설명] 이 함수는 두 단계를 차례로 실행해요.
+    #   1단계: 문제지 양식(prompt)에 질문·근거를 채워 "완성된 문제지"(ChatPromptValue)를 만든다.
+    #          이때는 아직 AI에게 아무것도 보내지 않아요. 종이만 준비한 상태예요.
+    #   2단계: 완성된 문제지를 AI(chat_model)에게 건네고 "답안지"(AIMessage)를 받는다.
+    #          실제 LLM API 요청은 바로 이 2단계에서 일어나요.
+    # 1단계의 결과물이 2단계의 입력이 되는 "릴레이 달리기"라고 생각하면 돼요.
+    prompt_value = prompt.invoke(inputs)  # 1단계: 문제지 완성
+    message = chat_model.invoke(prompt_value)  # 2단계: AI에게 문제지를 주고 답안 받기
+    # 무엇을 보냈는지(문제지)와 무엇을 받았는지(답안)를 둘 다 기록하려고 함께 돌려줍니다.
+    # 순서는 (문제지, 답안) 입니다.
+    return prompt_value, message
     # END D26-05-B02
 
 

@@ -18,12 +18,28 @@ def claim_faithfulness(claims: list[dict]) -> float | None:
     """Claim 목록에서 근거가 지지하는 Claim 비율을 계산하세요. Claim이 없으면 None."""
     # TODO D28-05-B01: Claim 목록에서 근거가 지지하는 Claim 비율을 계산하세요. Claim이 없으면 None.
     # 힌트: 모든 Claim의 supported는 교육용 사람 레이블입니다.
+    # [추가] Claim = 답변 속 "주장" 한 문장. supported=True면 자료(Context)에 그 내용이 진짜 있다는 뜻이에요.
+    # [추가] 주장이 하나도 없으면 0점이 아니라 "채점할 게 없음"이므로 None을 돌려줘요. (0으로 나누기도 막아줘요)
+    if not claims:
+        return None
+    # [추가] 시험 채점처럼 "맞은 개수 ÷ 전체 개수"를 계산해요. 예: 3개 중 2개 맞으면 2/3 ≈ 0.67
+    return sum(1 for c in claims if c['supported']) / len(claims)
     raise NotImplementedError("D28-05-B01 TODO를 완성하세요")
 
 def describe_claim_result(claims: list[dict]) -> str:
     """비지원 Claim을 이름과 함께 기록하세요. “모든 Claim 지원”과 “Claim 없음”은 구별합니다."""
     # TODO D28-05-B02: 비지원 Claim을 이름과 함께 기록하세요. “모든 Claim 지원”과 “Claim 없음”은 구별합니다.
     # 힌트: Faithfulness는 Reference Answer와의 비교가 아닙니다.
+    # [추가] 경우 1) 주장이 아예 없음 → "다 맞았다"와 헷갈리지 않게 따로 적어요.
+    if not claims:
+        return 'Claim 없음: 평가할 주장이 없습니다'
+    # [추가] 자료로 뒷받침되지 않는(supported=False) 주장의 문장만 골라 모아요.
+    unsupported = [c['text'] for c in claims if not c['supported']]
+    # [추가] 경우 2) 틀린 주장이 하나도 없음 → 모두 근거가 있다는 뜻이에요.
+    if not unsupported:
+        return '모든 Claim 지원'
+    # [추가] 경우 3) 근거 없는 주장이 있음 → 어떤 문장이 문제인지 이름(문장)을 그대로 보여줘요.
+    return '비지원 Claim: ' + ', '.join(unsupported)
     raise NotImplementedError("D28-05-B02 TODO를 완성하세요")
 
 

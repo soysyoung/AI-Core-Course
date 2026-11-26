@@ -23,7 +23,18 @@ def component_outputs() -> dict[str, str]:
     # 힌트: Prompt는 ChatPromptValue, Chat Model은 AIMessage입니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-03-I01 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-03-I01 TODO 미완성")
+    # [추가 설명] 각 부품이 "무엇을 돌려주는지"를 표로 정리합니다.
+    # 요리에 비유하면: Document는 재료 카드, Retriever는 재료를 찾아오는 사람(카드 목록을 돌려줌),
+    # Prompt는 주문서를 만드는 사람(ChatPromptValue), Chat Model은 요리사(AIMessage 답변)예요.
+    # Prompt와 Chat Model의 결과는 이름이 비슷해 헷갈리기 쉬우니 꼭 구분합니다.
+    return {
+        "Document": "본문·출처를 보관하는 데이터 객체",  # 실행하지 않고 담아 두는 그릇
+        "Retriever": "list[Document]",  # 찾아온 Document 여러 장
+        "Prompt": "ChatPromptValue",  # 모델에 보낼 메시지 묶음
+        "Chat Model": "AIMessage",  # 모델이 만든 답변 메시지
+    }
     # END D26-03-I01
 
 def access_kinds() -> dict[str, str]:
@@ -33,7 +44,18 @@ def access_kinds() -> dict[str, str]:
     # 힌트: 값 읽기와 실행을 구분합니다. 여기서는 실제 API 호출을 하지 않습니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-03-I02 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-03-I02 TODO 미완성")
+    # [추가 설명] "읽기만 하는 것"과 "일을 시키는 것"을 나눕니다.
+    # Document는 공책처럼 펼쳐서 읽기만 하면 되니 data,
+    # 나머지 셋은 .invoke(입력)으로 일을 시켜야 결과가 나오니 invoke입니다.
+    # 여기서는 표만 만들 뿐, 실제로 invoke를 호출하지는 않아요.
+    return {
+        "Document": "data",
+        "Retriever": "invoke",
+        "Prompt": "invoke",
+        "Chat Model": "invoke",
+    }
     # END D26-03-I02
 
 def repair_swapped_returns(swapped: dict[str, str]) -> dict[str, str]:
@@ -43,7 +65,16 @@ def repair_swapped_returns(swapped: dict[str, str]) -> dict[str, str]:
     # 힌트: component_outputs에서 올바른 값을 읽고 원본 dict는 유지합니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-03-I03 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-03-I03 TODO 미완성")
+    # [추가 설명] 틀린 표를 "복사본"에서 고칩니다. 원본은 비교용으로 그대로 남겨야 해요.
+    # {**swapped}는 같은 내용의 새 dict를 만드는 문법이라, 복사본을 고쳐도 원본은 안 바뀝니다.
+    # 바꿔 적힌 두 칸(Prompt·Chat Model)만 올바른 표(component_outputs)의 값으로 덮어씁니다.
+    correct = component_outputs()
+    repaired = {**swapped}  # 원본 보존용 복사
+    repaired["Prompt"] = correct["Prompt"]
+    repaired["Chat Model"] = correct["Chat Model"]
+    return repaired
     # END D26-03-I03
 
 def main():

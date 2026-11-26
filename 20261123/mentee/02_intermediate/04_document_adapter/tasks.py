@@ -18,7 +18,13 @@ def metadata_of(hit: dict) -> dict:
     # 힌트: citation_id·chunk_id·doc_id·source_version·source_locator·category입니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-04-I01 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-04-I01 TODO 미완성")
+    # [추가 설명] hit 카드에서 "출처 정보" 여섯 칸만 골라 담습니다. 본문(body)은 따로 다뤄요.
+    # 값은 고치지 않고 그대로 옮깁니다. 칸이 하나라도 없으면 hit[key]에서 KeyError가 나서
+    # "출처가 빠졌다"는 사실을 숨기지 않고 바로 알려 줍니다.
+    keys = ("citation_id", "chunk_id", "doc_id", "source_version", "source_locator", "category")
+    return {key: hit[key] for key in keys}
     # END D26-04-I01
 
 def to_document(hit: dict) -> Document:
@@ -28,7 +34,11 @@ def to_document(hit: dict) -> Document:
     # 힌트: hit의 body는 수정하지 않습니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-04-I02 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-04-I02 TODO 미완성")
+    # [추가 설명] Document는 LangChain이 쓰는 "본문 + 출처 꼬리표" 카드입니다.
+    # page_content에는 본문을 손대지 않고 그대로, metadata에는 위에서 고른 여섯 칸을 넣어요.
+    return Document(page_content=hit["body"], metadata=metadata_of(hit))
     # END D26-04-I02
 
 def hits_to_documents(hits: list[dict]) -> list[Document]:
@@ -38,7 +48,14 @@ def hits_to_documents(hits: list[dict]) -> list[Document]:
     # 힌트: to_document를 호출해 빈 목록부터 차례로 채웁니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-04-I03 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-04-I03 TODO 미완성")
+    # [추가 설명] 카드 여러 장을 앞에서부터 한 장씩 Document로 바꿔 같은 순서로 모읍니다.
+    # 카드가 없으면 빈 목록 []을 그대로 돌려줍니다.
+    documents = []  # 결과를 담을 빈 상자
+    for hit in hits:
+        documents.append(to_document(hit))  # 순서를 지키며 하나씩 추가
+    return documents
     # END D26-04-I03
 
 def metadata_is_preserved(hit: dict, metadata: dict) -> bool:

@@ -21,7 +21,11 @@ def make_inputs(question: str, context: str) -> dict:
     # TODO D26-05-I01: 질문과 Context를 각각 question·context Key로 묶어 반환합니다.
     # 힌트: Dictionary의 두 Key 이름은 Prompt의 변수 이름과 같아야 합니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-05-I01 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-05-I01 TODO 미완성")
+    # [추가 설명] Prompt 틀에는 {question}, {context}라는 빈칸이 있어요.
+    # 빈칸 이름과 똑같은 Key로 값을 담아야 Prompt가 제자리에 끼워 넣을 수 있습니다.
+    return {"question": question, "context": context}
     # END D26-05-I01
 
 
@@ -31,7 +35,15 @@ def invoke_pair(prompt, chat_model, inputs: dict):
     # TODO D26-05-I02: Prompt를 먼저 실행하고 그 반환값을 Chat Model에 전달한 뒤 두 반환값을 함께 반환합니다.
     # 힌트: 첫 invoke의 반환값이 둘째 invoke의 입력입니다. 반환 순서는 (prompt_value, message)입니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-05-I02 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-05-I02 TODO 미완성")
+    # [추가 설명] 두 단계 릴레이입니다.
+    # 1) Prompt에 dict를 주면 모델이 읽을 메시지 묶음(ChatPromptValue)이 나오고,
+    # 2) 그 결과를 그대로 Chat Model에 넘기면 답변(AIMessage)이 나옵니다.
+    # Prompt 단계에서 오류가 나면 2단계로 가지 않으므로 모델은 호출되지 않아요.
+    prompt_value = prompt.invoke(inputs)
+    message = chat_model.invoke(prompt_value)
+    return prompt_value, message
     # END D26-05-I02
 
 
@@ -41,7 +53,16 @@ def inspect_missing_context(prompt) -> dict:
     # TODO D26-05-I03: context Key를 뺀 입력을 Prompt에 전달하여 발생한 KeyError의 단계를 기록합니다.
     # 힌트: try/except KeyError를 사용합니다. 이 함수에서는 Chat Model을 호출하지 않습니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-05-I03 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-05-I03 TODO 미완성")
+    # [추가 설명] 일부러 context 빈칸을 비워서 Prompt에 넣어 봅니다.
+    # 빈칸을 채울 값이 없으니 Prompt 단계에서 KeyError가 나고, 모델까지는 가지 않습니다.
+    # try/except는 "해 보고, 이 오류가 나면 잡아서 기록하자"라는 문법이에요.
+    try:
+        prompt.invoke({"question": "15분 늦으면 어떻게 기록되나요?"})
+    except KeyError as error:
+        return {"stage": "prompt_input", "exception_type": type(error).__name__, "model_invoked": False}
+    raise AssertionError("context가 없는데 Prompt가 KeyError를 내지 않았습니다.")
     # END D26-05-I03
 
 

@@ -27,7 +27,17 @@ def wire_app(retriever, generation):
     # TODO D26-08-B01: retriever와 generation을 make_rag_service에 연결한 뒤 create_app의 결과를 반환합니다.
     # 힌트: max_chars에는 MAX_CHARS를 사용합니다. 서비스를 호출한 결과가 아니라 서비스 함수 자체를 create_app에 넘깁니다.
     # 아래 NotImplementedError를 지우고 이 블록을 완성하세요.
-    raise NotImplementedError("D26-08-B01 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-08-B01 TODO 미완성")
+    # [추가 설명] 식당에 비유해 볼게요.
+    #   - retriever: 창고에서 재료(관련 문서)를 찾아오는 직원
+    #   - generation: 재료로 요리(답변)를 만드는 요리사
+    #   - make_rag_service: 두 사람을 묶어 "주문 하나를 끝까지 처리하는 주방"을 만들어요.
+    #   - create_app: 손님(인터넷 요청)이 주문할 수 있는 "주문 창구(API 주소 /rag/answer)"를 열어요.
+    # 주방(service)은 함수 자체를 넘겨야 해요. service(...)처럼 괄호를 붙여 지금 호출하면
+    # 손님이 오기도 전에 요리를 한 번 해 버리는 셈이라 안 돼요.
+    service = make_rag_service(retriever, generation, max_chars=MAX_CHARS)  # 자료집 글자 수 상한 600
+    return create_app(service)
     # END D26-08-B01
 
 
@@ -37,7 +47,17 @@ def make_request(query, category, candidate_k=3, context_k=2):
     # TODO D26-08-B02: query/category/candidate_k/context_k를 같은 이름의 네 Key로 묶어 반환합니다.
     # 힌트: 별도의 ID나 기본 답변을 추가하지 않습니다. 입력의 두 k를 서로 바꾸지 마세요.
     # 아래 NotImplementedError를 지우고 이 블록을 완성하세요.
-    raise NotImplementedError("D26-08-B02 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-08-B02 TODO 미완성")
+    # [추가 설명] API에 보낼 "주문서"를 만드는 함수예요. 주문서 칸 이름은 서버가 정해 둔 이름과 같아야 해요.
+    # 정해진 네 칸 말고 다른 칸을 더 적으면 서버가 "모르는 칸이 있다"며 거절(422)해요.
+    return {
+        "query": query,  # 질문 내용
+        "category": category,  # 어느 분야에서 찾을지 (학사·시설·지원 중 하나)
+        "candidate_k": candidate_k,  # 검색으로 찾아올 후보 문서의 최대 개수
+        "context_k": context_k,  # 그중 실제로 AI에게 보여 줄 문서의 최대 개수
+        # 두 k는 뜻이 달라요. 후보는 넉넉히 찾고(candidate_k), 보여 주는 건 골라서(context_k).
+    }
     # END D26-08-B02
 
 

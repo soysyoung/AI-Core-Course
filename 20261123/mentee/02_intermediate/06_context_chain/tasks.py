@@ -21,7 +21,19 @@ def prepare_context(documents, question: str, max_items=2, max_chars=600) -> dic
     # TODO D26-06-I01: build_context로 Context와 포함 문서를 얻고, 포함 ID 및 Prompt 입력을 함께 반환합니다.
     # 힌트: 반환 Key는 context, included_docs, provided_ids, inputs입니다. ID는 included_docs에서만 모읍니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-06-I01 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-06-I01 TODO 미완성")
+    # [추가 설명] build_context가 근거 글(context)과 실제로 넣은 카드 목록(included_docs)을 함께 줍니다.
+    # 번호(ID)는 꼭 "실제로 넣은 카드"에서만 모아요. 넣지 않은 카드 번호가 섞이면 출처가 틀어집니다.
+    # max_items가 잘못되면 build_context가 ValueError를 내므로 그대로 둡니다.
+    context, included_docs = build_context(documents, max_items=max_items, max_chars=max_chars)
+    provided_ids = [doc.metadata["citation_id"] for doc in included_docs]
+    return {
+        "context": context,
+        "included_docs": included_docs,
+        "provided_ids": provided_ids,
+        "inputs": {"question": question, "context": context},  # Prompt 빈칸 이름과 같은 Key
+    }
     # END D26-06-I01
 
 
@@ -31,7 +43,13 @@ def run_generation(prompt, structured_model, inputs: dict):
     # TODO D26-06-I02: Prompt와 Structured Model을 |로 연결하고 inputs로 실행하여 bundle을 반환합니다.
     # 힌트: Chain의 앞 단계 출력이 뒤 단계 입력입니다. 반환 bundle의 raw·parsed·parsing_error를 그대로 보존합니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-06-I02 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-06-I02 TODO 미완성")
+    # [추가 설명] | 기호는 "앞 단계 결과를 뒤 단계로 흘려보내는 파이프"입니다.
+    # prompt | structured_model 은 "주문서 만들기 → 요리사에게 전달"을 한 줄로 이은 Chain이에요.
+    # 돌아온 bundle(raw·parsed·parsing_error)은 고치지 않고 그대로 돌려줍니다. 검사는 다음 실습에서 해요.
+    chain = prompt | structured_model
+    return chain.invoke(inputs)
     # END D26-06-I02
 
 
@@ -41,7 +59,21 @@ def compare_contexts(documents) -> dict:
     # TODO D26-06-I03: 기본·중복 청크 추가·max_items=1 조건을 각각 실행하여 포함 ID를 비교합니다.
     # 힌트: 세 조건에서 한 가지 설정만 바꿉니다. 모델은 호출하지 않고 build_context 결과만 비교합니다.
     # 완료 후 아래 NotImplementedError를 제거하고 반환값을 확인하세요.
-    raise NotImplementedError("D26-06-I03 TODO 미완성")
+    # (아래 raise는 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-06-I03 TODO 미완성")
+    # [추가 설명] 실험은 "한 번에 하나만 바꾸기"가 원칙입니다.
+    # 1) 기본 설정, 2) 첫 카드를 한 장 더 끼워 넣기(중복), 3) 최대 1장만 넣기.
+    # 중복 카드는 build_context가 걸러 내니 결과가 기본과 같고, max_items=1이면 첫 카드만 남아요.
+    # 모델은 부르지 않으므로 llm_calls는 0입니다.
+    def ids_of(docs, max_items=2):
+        _, included = build_context(docs, max_items=max_items)
+        return [doc.metadata["citation_id"] for doc in included]
+    return {
+        "baseline_ids": ids_of(documents),
+        "duplicate_ids": ids_of([documents[0]] + list(documents)),
+        "one_document_ids": ids_of(documents, max_items=1),
+        "llm_calls": 0,
+    }
     # END D26-06-I03
 
 

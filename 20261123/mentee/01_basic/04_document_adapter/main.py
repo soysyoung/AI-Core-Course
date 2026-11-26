@@ -21,7 +21,17 @@ def to_document(hit: dict) -> Document:
     # 힌트: Document(page_content=..., metadata=...)를 사용합니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-04-B01 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-04-B01 TODO 미완성")
+    # [추가 설명] Hit은 "검색으로 찾은 글 조각 카드"이고, Document는 LangChain이 쓰는 "공식 서류 봉투"예요.
+    # 봉투에는 두 칸이 있어요.
+    #   - page_content: 봉투 안에 넣는 본문(글 내용)
+    #   - metadata: 봉투 겉면에 붙이는 라벨(번호, 문서 이름, 버전, 위치, 분류)
+    # 카드의 본문(body)은 봉투 안에, 정해진 여섯 라벨(METADATA_KEYS)은 겉면에 "그대로" 옮겨 적습니다.
+    # hit[key]처럼 직접 꺼내므로, 라벨 하나라도 빠져 있으면 KeyError가 나서 바로 알 수 있어요.
+    # (빠진 라벨을 몰래 빈칸으로 채우면 나중에 출처를 잃어버리니까, 일부러 오류가 나게 둡니다.)
+    metadata = {key: hit[key] for key in METADATA_KEYS}  # 여섯 라벨을 하나씩 같은 이름으로 복사
+    return Document(page_content=hit["body"], metadata=metadata)  # 본문은 바꾸지 않고 그대로 넣기
     # END D26-04-B01
 
 def hits_to_documents(hits: list[dict]) -> list[Document]:
@@ -31,7 +41,13 @@ def hits_to_documents(hits: list[dict]) -> list[Document]:
     # 힌트: 빈 목록도 특별한 가짜 문서 없이 그대로 빈 결과가 됩니다.
     # 함수의 docstring·README·expected/EXPECTED.md에서 입력과 완료 조건을 확인하세요.
     # 구현 후 아래 NotImplementedError를 제거하세요. 정답은 이 아래에 숨겨져 있지 않습니다.
-    raise NotImplementedError("D26-04-B02 TODO 미완성")
+    # (아래 raise는 함수가 값을 돌려주려면 실행되면 안 되어서 주석 처리했습니다)
+    # raise NotImplementedError("D26-04-B02 TODO 미완성")
+    # [추가 설명] 카드 여러 장을 앞에서부터 한 장씩 봉투(Document)에 옮겨 담는 일이에요.
+    # 순서를 바꾸지 않아야 "몇 번째 카드가 몇 번째 봉투"인지 나중에 맞춰 볼 수 있어요.
+    # 카드가 한 장도 없으면(빈 목록) 봉투도 0개, 즉 빈 목록 []을 돌려주면 됩니다.
+    # 아래 한 줄짜리 for문(리스트 컴프리헨션)은 빈 목록이 들어오면 자연스럽게 []가 돼요.
+    return [to_document(hit) for hit in hits]
     # END D26-04-B02
 
 def metadata_is_preserved(hit: dict, metadata: dict) -> bool:
